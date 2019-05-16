@@ -24,7 +24,7 @@ Read more: https://linuxcontainers.org/lxd/
 ## Usage
 
     [Usage]
-      ./op5_lxd.sh -v [MONITOR_VERSION]
+      ./op5lxd.sh -v [MONITOR_VERSION]
 
     [Flags]
       -b	Base the container of this existing LXC image.
