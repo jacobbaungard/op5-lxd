@@ -203,7 +203,7 @@ safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y tar whic
 safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /tmp/op5_install/$filename -C /tmp/op5_install/ > /dev/null"
 safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /tmp/op5_install/*onitor* && ./install.sh --noninteractive > /dev/null"
 
-echo "[>>>] Installtion finished on container: $container_name"
+echo "[>>>] Installation finished on container: $container_name"
 
 #cleanup install files on container
 safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /tmp/op5_install > /dev/null"
