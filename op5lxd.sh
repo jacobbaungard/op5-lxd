@@ -118,7 +118,7 @@ while getopts "h?v:o:b:en:" opt; do
         show_usage
         exit 1
 	;;
-    v)  pat="\b[7-8]\b\.\b[0-9]\b.\b[0-9]\b"
+    v)  pat="\b[7-8]\b\.\b[0-9]\b.\b[0-9][0-9]?\b"
 	if [[ $OPTARG =~ $pat ]]; then
 	    version=$OPTARG
 	else
