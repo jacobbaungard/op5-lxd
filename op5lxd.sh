@@ -35,7 +35,7 @@ function download_if_missing {
     _filename=$2
 
     if [ ! -f $_filename ]; then
-	wget $_baseurl/$_filename &>/dev/null
+	curl -O $_baseurl/$_filename &>/dev/null
 	return $?
     else
 	echo "[>>>] install file already found, skipping downloading"
@@ -160,7 +160,7 @@ fi
 # try to find the installation package
 download_monitor $version
 if [ $? -ne 0 ] ; then
-    echo "[>>>] Failed to donwload OP5 Monitor $version"
+    echo "[>>>] Failed to download OP5 Monitor $version"
     exit 1
 fi
 
