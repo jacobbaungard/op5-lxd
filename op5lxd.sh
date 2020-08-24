@@ -12,6 +12,7 @@ function show_usage {
 
     printf '\n%s\n' "[Flags]"
     printf '  %s\t%s\n' "-b" "Base the container of this existing LXC image."
+    printf '  %s\t%s\n' "-d" "Print debug messages"
     printf '  %s\t%s\n' "-e" "Create an ephemeral container"
     printf '  %s\t%s\n' "-h" "Shows this usage text"
     printf '  %s\t%s\n' "-n" "Specify a container name"
@@ -22,7 +23,12 @@ function show_usage {
 
 # Runs a command and make sure we exit if it fails
 safeRunCommand() {
-   "$@"
+    if [ -n "$debug" ]; then
+	"$@"
+    else
+	"$@" > /dev/null
+    fi
+
 
    if [ $? != 0 ]; then
       printf "Error when executing command: '$*'"
@@ -108,7 +114,7 @@ ephemeral=""
 container_name=""
 
 # Parse arguments
-while getopts "h?v:o:b:en:" opt; do
+while getopts "h?v:o:b:en:d" opt; do
     case "$opt" in
     h)
         show_usage
@@ -141,6 +147,8 @@ while getopts "h?v:o:b:en:" opt; do
     e)  ephemeral="--ephemeral"
 	;;
     n)  container_name=$OPTARG
+	;;
+    d)	debug=1
 	;;
     esac
 done
@@ -195,18 +203,18 @@ safeRunCommand lxc exec $container_name -- mkdir /tmp/op5_install/
 safeRunCommand lxc file push $filename $container_name/tmp/op5_install/
 # few additional EL7 things
 if [[ $el_version == "7" ]] ; then 
-    safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y firewalld > /dev/null"
-    safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl enable firewalld > /dev/null"
-    safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl start firewalld > /dev/null"
+    safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y firewalld"
+    safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl enable firewalld"
+    safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl start firewalld"
 fi
-safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y tar which > /dev/null"
-safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /tmp/op5_install/$filename -C /tmp/op5_install/ > /dev/null"
-safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /tmp/op5_install/*onitor* && ./install.sh --noninteractive > /dev/null"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y tar which"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /tmp/op5_install/$filename -C /tmp/op5_install/"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /tmp/op5_install/*onitor* && ./install.sh --noninteractive"
 
 echo "[>>>] Installation finished on container: $container_name"
 
 #cleanup install files on container
-safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /tmp/op5_install > /dev/null"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /tmp/op5_install"
 
 container_ip=( $(lxc list --format csv -c 4 $container_name) )
 container_ip=${container_ip[0]}
