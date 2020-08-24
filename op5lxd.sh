@@ -199,8 +199,8 @@ echo "[>>>] Installing OP5 Monitor on the container"
 sleep 10
 
 # actual installation steps
-safeRunCommand lxc exec $container_name -- mkdir /tmp/op5_install/
-safeRunCommand lxc file push $filename $container_name/tmp/op5_install/
+safeRunCommand lxc exec $container_name -- mkdir /root/op5_install/
+safeRunCommand lxc file push $filename $container_name/root/op5_install/
 # few additional EL7 things
 if [[ $el_version == "7" ]] ; then 
     safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y firewalld"
@@ -208,13 +208,13 @@ if [[ $el_version == "7" ]] ; then
     safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl start firewalld"
 fi
 safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y tar which"
-safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /tmp/op5_install/$filename -C /tmp/op5_install/"
-safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /tmp/op5_install/*onitor* && ./install.sh --noninteractive"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /root/op5_install/$filename -C /root/op5_install/"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /root/op5_install/*onitor* && ./install.sh --noninteractive"
 
 echo "[>>>] Installation finished on container: $container_name"
 
 #cleanup install files on container
-safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /tmp/op5_install"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /root/op5_install"
 
 container_ip=( $(lxc list --format csv -c 4 $container_name) )
 container_ip=${container_ip[0]}
