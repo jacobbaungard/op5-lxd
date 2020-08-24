@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 function show_usage {
     printf '%s\n' "[Description]"
     printf '  %s\n' "Command line utility to spin up a linux container with a specific OP5 Monitor version"
@@ -40,8 +41,19 @@ function download_if_missing {
     _baseurl=$1
     _filename=$2
 
-    if [ ! -f $_filename ]; then
-	curl -O $_baseurl/$_filename &>/dev/null
+    if [ -n "$OP5LXD_TARBALL_PATH" ]; then
+	download_dir=$OP5LXD_TARBALL_PATH
+    else
+	download_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+    fi
+
+    if [ ! -d "$download_dir" ]; then
+	echo "Download directory doesn't exist: $download_dir"
+	return 1
+    fi
+
+    if [ ! -f $download_dir/$_filename ]; then
+	curl $_baseurl/$_filename -o $download_dir/$_filename -s
 	return $?
     else
 	echo "[>>>] install file already found, skipping downloading"
@@ -200,7 +212,7 @@ sleep 10
 
 # actual installation steps
 safeRunCommand lxc exec $container_name -- mkdir /root/op5_install/
-safeRunCommand lxc file push $filename $container_name/root/op5_install/
+safeRunCommand lxc file push $download_dir/$filename $container_name/root/op5_install/
 # few additional EL7 things
 if [[ $el_version == "7" ]] ; then 
     safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y firewalld"

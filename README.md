@@ -32,8 +32,13 @@ Read more: https://linuxcontainers.org/lxd/
 
     [Flags]
       -b	Base the container of this existing LXC image.
+      -d        Print debug messages
       -e	Create an ephemeral container
       -h	Shows this usage text
       -n	Specify a container name
       -o	Specify the CentOS major version to use (6 or 7) - Also recommended when using -b
       -v	The monitor version to install [Required]
+
+### Download location
+
+In order to install OP5 Monitor, the script will download the OP5 Monitor installation tarball. If the tarball is already downloaded, it will use the existing file. By default the download location is set to the same location of the op5lxd script. To change this set the enviorment variable `OP5LXD_TARBALL_PATH` to your desired location. 
