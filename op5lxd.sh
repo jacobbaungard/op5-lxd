@@ -228,6 +228,9 @@ echo "[>>>] Installation finished on container: $container_name"
 #cleanup install files on container
 safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -rf /root/op5_install"
 
+#ensure we set the hostname correctly
+safeRunCommand lxc exec $container_name -- hostnamectl set-hostname $container_name
+
 container_ip=( $(lxc list --format csv -c 4 $container_name) )
 container_ip=${container_ip[0]}
 
