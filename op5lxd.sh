@@ -17,7 +17,7 @@ function show_usage {
     printf '  %s\t%s\n' "-e" "Create an ephemeral container"
     printf '  %s\t%s\n' "-h" "Shows this usage text"
     printf '  %s\t%s\n' "-n" "Specify a container name"
-    printf '  %s\t%s\n' "-o" "Specify the CentOS major version to use (6 or 7) - Also recommended when using -b"
+    printf '  %s\t%s\n' "-o" "Specify the EL major version to use (6 or 7, 8rocky, 8stream) - Also recommended when using -b"
     printf '  %s\t%s\n' "-v" "The monitor version to install [Required]"
 
 }
@@ -52,7 +52,7 @@ function download_if_missing {
 	return 1
     fi
 
-    if [ ! -f $download_dir/$_filename ]; then
+    if [ ! -f $download_dir/$_filename ] || [[ "$_filename" == *"9beta"* ]]; then
 	curl $_baseurl/$_filename -o $download_dir/$_filename -s
 	return $?
     else
@@ -64,6 +64,7 @@ function download_if_missing {
 function download_monitor {
     BASEURL_7='https://d2ubxhm80y3bwr.cloudfront.net/Downloads/op5_monitor_archive'
     BASEURL_8='https://d2ubxhm80y3bwr.cloudfront.net/Downloads/op5_monitor_archive/Monitor8/Tarball'
+    BASEURL_9='https://op5-filebase.s3.eu-west-1.amazonaws.com/Downloads/op5_monitor_archive/Monitor9/Tarball/beta'
     # Known filenames
     declare -A filenames
     filenames["7.5.0"]="op5-monitor-7.5.0.x64.tar.gz"
@@ -99,7 +100,11 @@ function download_monitor {
     fi
 
     # Try to guess the URL... Yay for consistent naming.
-    if [[ $1 == 8* ]] ; then
+    if [[ $1 == 9* ]] ; then
+	filename="op5-monitor-$1.tar.gz"
+	download_if_missing $BASEURL_9 $filename
+	download_ok=$?
+    elif [[ $1 == 8* ]] ; then
 	filename="op5-monitor-$1-x64.tar.gz"
 	download_if_missing $BASEURL_8 $filename
 	download_ok=$?
@@ -112,6 +117,8 @@ function download_monitor {
 	filename="op5-monitor-$1.x64.tar.gz"
 	download_if_missing $BASEURL_7 $filename
 	download_ok=$?
+    else
+	download_ok=1
     fi
     if [ $download_ok -eq 0 ]; then
 	return 0
@@ -137,7 +144,10 @@ while getopts "h?v:o:b:en:d" opt; do
         exit 1
 	;;
     v)  pat="\b[7-8]\b\.\b[0-9]\b.\b[0-9][0-9]?\b"
+	ver9beta="9beta"
 	if [[ $OPTARG =~ $pat ]]; then
+	    version=$OPTARG
+	elif [[ $OPTARG == "$ver9beta" ]]; then
 	    version=$OPTARG
 	else
 	    show_usage
@@ -146,11 +156,12 @@ while getopts "h?v:o:b:en:d" opt; do
 	fi
         ;;
     o)  shopt -s nocasematch #ignore case
-	if [[ "$OPTARG" == "6" || "$OPTARG" == "7" ]]; then
-	    el_version="${OPTARG,,}"
+	if [[ "$OPTARG" == "6" || "$OPTARG" == "7" ||
+	    "$OPTARG" == "8rocky" || "$OPTARG" == "8stream" ]]; then
+	    el_version="${OPTARG}"
 	else
 	    show_usage
-	    echo "Invalid CentOS version choice"
+	    echo "Invalid OS version choice"
 	    exit 1
 	fi
 	;;
@@ -188,7 +199,15 @@ fi
 if [ -n "$base_image" ]; then
     lxc_output=$(lxc launch $base_image $container_name $ephemeral)
 else
-    lxc_output=$(lxc launch images:centos/$el_version $container_name $ephemeral)
+    image=""
+    if [[ "$el_version" == "6" || "$el_version" == "7" ]]; then
+        image="centos/$el_version"
+    elif [[ "$el_version" == "8rocky" ]]; then
+	image="rockylinux/8"
+    elif [[ "$el_version" == "8stream" ]]; then
+	image="centos/8-Stream"
+    fi
+    lxc_output=$(lxc launch images:$image $container_name $ephemeral)
 fi
 
 # catch errors
@@ -214,13 +233,17 @@ sleep 10
 safeRunCommand lxc exec $container_name -- mkdir /root/op5_install/
 safeRunCommand lxc file push $download_dir/$filename $container_name/root/op5_install/
 # few additional EL7 things
-if [[ $el_version == "7" ]] ; then 
+if [[ $el_version == "7" || $el_version == "8"* ]] ; then
     safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y firewalld"
     safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl enable firewalld"
     safeRunCommand lxc exec $container_name -- /bin/bash -c "systemctl start firewalld"
 fi
+if [[ $el_version == "8"* ]] ; then
+    safeRunCommand lxc exec $container_name -- /bin/bash -c "dnf install -y selinux-policy dnf-plugins-core"
+fi
 safeRunCommand lxc exec $container_name -- /bin/bash -c "yum install -y tar which"
 safeRunCommand lxc exec $container_name -- /bin/bash -c "tar -xf /root/op5_install/$filename -C /root/op5_install/"
+safeRunCommand lxc exec $container_name -- /bin/bash -c "rm -f /root/op5_install/$filename"
 safeRunCommand lxc exec $container_name -- /bin/bash -c "cd /root/op5_install/*onitor* && ./install.sh --noninteractive"
 
 echo "[>>>] Installation finished on container: $container_name"
