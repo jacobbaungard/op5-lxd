@@ -81,13 +81,17 @@ function download_monitor {
     filenames["7.3.19"]="op5-monitor-7.3.19-20171212.tar.gz"
     filenames["7.3.2"]="op5-monitor-7.3.2-20161114.tar.gz"
     filenames["7.0.0"]="op5-monitor-7.0.0-20140903.tar.gz"
+    filenames["9beta"]="op5-monitor-9beta-latest.tar.gz"
 
     echo "[>>>] Attempting to download OP5 Monitor $1"
 
     # the version has a known filename
     if [[ -v filenames["$1"] ]] ; then
 	filename=${filenames["$1"]}
-	if [[ $1 == 8* ]] ; then
+	if [[ $1 == 9* ]] ; then
+	    download_if_missing $BASEURL_9 $filename
+	    download_ok=$?
+	elif [[ $1 == 8* ]] ; then
 	    download_if_missing $BASEURL_8 $filename
 	    download_ok=$?
 	elif [[ $1 == 7* ]] ; then
